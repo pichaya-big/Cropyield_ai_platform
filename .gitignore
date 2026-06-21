@@ -1,0 +1,23 @@
+# 🌟 ซ่อนไฟล์ความลับ (ห้ามเอาขึ้น GitHub เด็ดขาด)
+.env
+.env.*
+*.env
+
+# 📦 ฝั่ง Backend (Python / FastAPI / uv)
+server/.venv/
+server/.uv/
+server/__pycache__/
+server/.python-version
+# ⚠️ บล็อกไฟล์โมเดล Stacking และ Features List ตัวหนักๆ ไม่ให้ขึ้น Git
+server/*.pklป_
+
+# 💻 ฝั่ง Frontend (React / Vite / Node)
+client/node_modules/
+client/dist/
+client/.eslintcache
+
+# 🛠️ ไฟล์ระบบและเครื่องมืออื่นๆ
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

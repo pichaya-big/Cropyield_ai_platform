@@ -1,0 +1,27 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  backend:
+    build: ./server
+    container_name: cropyield_server
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - BACKEND_PORT=${BACKEND_PORT}
+    ports:
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
+
+  frontend:
+    build: ./client
+    container_name: cropyield_client
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - FRONTEND_PORT=${FRONTEND_PORT}
+    ports:
+      - "${FRONTEND_PORT}:${FRONTEND_PORT}"
+    depends_on:
+      - backend
