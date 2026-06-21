@@ -17,10 +17,10 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             # 1. เข้าไปที่โฟลเดอร์โปรเจกต์บน Server ของคุณ
-            cd /path/to/your/project
+            cd /var/data/Cropyield_ai_platform
             
             # 2. ดึงโค้ดใหม่ล่าสุดจาก GitHub
-            git pull origin master
+            git pull origin main
             
             # 3. สั่ง Build และรัน Docker ใหม่ทั้งหมดแบบ Background (-d)
             docker-compose up -d --build
