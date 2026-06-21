@@ -9,7 +9,7 @@ server/.uv/
 server/__pycache__/
 server/.python-version
 # ⚠️ บล็อกไฟล์โมเดล Stacking และ Features List ตัวหนักๆ ไม่ให้ขึ้น Git
-server/*.pklป_
+server/*.pkl
 
 # 💻 ฝั่ง Frontend (React / Vite / Node)
 client/node_modules/
