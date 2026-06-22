@@ -21,6 +21,7 @@ services:
       - .env
     environment:
       - FRONTEND_PORT=${FRONTEND_PORT}
+      - VITE_API_URL=${VITE_API_URL}
     ports:
       - "${FRONTEND_PORT}:${FRONTEND_PORT}"
     depends_on:
