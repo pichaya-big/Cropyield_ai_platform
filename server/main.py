@@ -50,7 +50,7 @@ class PredictionRequest(BaseModel):
     pesticide: float
 
 
-@app.get("api/")
+@app.get("/api/")
 def read_root():
     return {
         "message": "Welcome to CropYield-AI-Platform API",
@@ -58,14 +58,14 @@ def read_root():
     }
 
 
-@app.post("api/predict")
+@app.post("/api/predict")
 def predict_yield(payload: PredictionRequest):
     if model is None or model_features is None:
         raise HTTPException(status_code=500, detail="เซิร์ฟเวอร์ยังไม่พร้อมใช้งานเนื่องจากโหลดไฟล์โมเดลไม่สำเร็จ")
     
     try:
         # 1. สร้าง DataFrame เปล่าที่มีคอลัมน์และลำดับเหมือนตอนเทรนโมเดลเป๊ะๆ (ค่าเริ่มต้นเป็น 0)
-        input_df = pd.DataFrame(0, index=[0], columns=model_features)
+        input_df = pd.DataFrame(0.0, index=[0], columns=model_features)
         
         # ปรับชื่อคอลัมน์ใน DataFrame ให้เป็นตัวพิมพ์เล็กชั่วคราวเพื่อใช้ค้นหาตำแหน่งในการเติมค่า
         cols_lower = [str(c).lower() for c in input_df.columns]
@@ -93,16 +93,13 @@ def predict_yield(payload: PredictionRequest):
 
 
         # 3. 🗺️ จัดการ One-Hot Encoding แบบยืดหยุ่นรองรับทุกรูปแบบ (ตัวเล็ก/ตัวใหญ่/ขีดล่าง)
-        # จำลองค่าข้อความประเทศ และชนิดพืช
-        country_target = f"area_{payload.country}".lower()
-        item_target = f"item_{payload.item}".lower()
-        
         # ค้นหาและเปิดสวิตช์ (เปลี่ยนเป็น 1) ในคอลัมน์ที่ชื่อตรงกัน
-        for i, col_name in enumerate(cols_lower):
-            if col_name == country_target or col_name.endswith(f"_{payload.country}".lower()):
-                input_df.iloc[0, i] = 1
-            if col_name == item_target or col_name.endswith(f"_{payload.item}".lower()):
-                input_df.iloc[0, i] = 1
+        for col in input_df.columns:
+            col_lower = str(col).lower()
+            if col_lower == 'year':
+                input_df[col] = input_df[col].astype('int64')
+            else:
+                input_df[col] = input_df[col].astype('float64')
                 
         # 4. 🚀 ส่งข้อมูลเข้าสมองกลโมเดลเพื่อพยากรณ์ผลลัพธ์
         prediction_result = model.predict(input_df)[0]
