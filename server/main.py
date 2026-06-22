@@ -50,7 +50,7 @@ class PredictionRequest(BaseModel):
     pesticide: float
 
 
-@app.get("/")
+@app.get("api/")
 def read_root():
     return {
         "message": "Welcome to CropYield-AI-Platform API",
@@ -58,7 +58,7 @@ def read_root():
     }
 
 
-@app.post("/predict")
+@app.post("api/predict")
 def predict_yield(payload: PredictionRequest):
     if model is None or model_features is None:
         raise HTTPException(status_code=500, detail="เซิร์ฟเวอร์ยังไม่พร้อมใช้งานเนื่องจากโหลดไฟล์โมเดลไม่สำเร็จ")
