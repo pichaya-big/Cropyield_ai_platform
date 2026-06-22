@@ -47,7 +47,8 @@ function App() {
 
     try {
       const apiUrl = import.meta.env.VITE_API_URL;
-      const response = await fetch( `${apiUrl}/api/predict`, {
+      
+      const response = await fetch(`${apiUrl}/api/predict`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -61,9 +62,9 @@ function App() {
       });
 
       if (!response.ok) throw new Error('Network response was not ok');
-      
+
       const result: PredictionResponse = await response.json();
-      
+
       if (result.status === "success") {
         setPrediction(result.data.prediction_hg_ha);
       }
@@ -96,7 +97,7 @@ function App() {
               Stack: Vite + FastAPI
             </div>
             <div className="flex items-center gap-1.5 text-xs bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-full font-medium border border-emerald-100">
-              <Activity className="w-3.5 h-3.5" /> 
+              <Activity className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Model Ready</span>
             </div>
           </div>
@@ -115,7 +116,7 @@ function App() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-          
+
           {/* ฝั่งซ้าย: Form */}
           <form onSubmit={handlePredict} className="lg:col-span-8 bg-white/80 backdrop-blur-sm border border-slate-200/60 rounded-3xl p-6 sm:p-8 shadow-xl shadow-slate-200/40">
             <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100 mb-6">
@@ -131,10 +132,10 @@ function App() {
                 <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                   <Globe className="w-4 h-4 text-emerald-500" /> ประเทศภูมิภาค
                 </label>
-                <select 
+                <select
                   className="w-full bg-slate-50 hover:bg-slate-100/50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all cursor-pointer appearance-none font-medium text-slate-700"
                   value={formData.country}
-                  onChange={(e) => setFormData({...formData, country: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                 >
                   {countries.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
@@ -145,10 +146,10 @@ function App() {
                 <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                   <Leaf className="w-4 h-4 text-emerald-500" /> ชนิดพืชเศรษฐกิจ
                 </label>
-                <select 
+                <select
                   className="w-full bg-slate-50 hover:bg-slate-100/50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all cursor-pointer appearance-none font-medium text-slate-700"
                   value={formData.item}
-                  onChange={(e) => setFormData({...formData, item: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, item: e.target.value })}
                 >
                   {crops.map(crop => <option key={crop} value={crop}>{crop}</option>)}
                 </select>
@@ -159,11 +160,11 @@ function App() {
                 <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-emerald-500" /> ปีเพาะปลูก (ค.ศ.)
                 </label>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   className="w-full bg-slate-50 hover:bg-slate-100/50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-slate-700"
                   value={formData.year}
-                  onChange={(e) => setFormData({...formData, year: Number(e.target.value)})}
+                  onChange={(e) => setFormData({ ...formData, year: Number(e.target.value) })}
                 />
               </div>
 
@@ -172,11 +173,11 @@ function App() {
                 <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                   <CloudRain className="w-4 h-4 text-emerald-500" /> ปริมาณน้ำฝน (mm/ปี)
                 </label>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   className="w-full bg-slate-50 hover:bg-slate-100/50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-slate-700"
                   value={formData.rain}
-                  onChange={(e) => setFormData({...formData, rain: Number(e.target.value)})}
+                  onChange={(e) => setFormData({ ...formData, rain: Number(e.target.value) })}
                 />
               </div>
 
@@ -185,11 +186,11 @@ function App() {
                 <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                   <Thermometer className="w-4 h-4 text-emerald-500" /> อุณหภูมิเฉลี่ย (°C)
                 </label>
-                <input 
+                <input
                   type="number" step="0.1"
                   className="w-full bg-slate-50 hover:bg-slate-100/50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-slate-700"
                   value={formData.temp}
-                  onChange={(e) => setFormData({...formData, temp: Number(e.target.value)})}
+                  onChange={(e) => setFormData({ ...formData, temp: Number(e.target.value) })}
                 />
               </div>
 
@@ -198,16 +199,16 @@ function App() {
                 <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                   <FlaskConical className="w-4 h-4 text-emerald-500" /> ยาฆ่าแมลง (ตัน)
                 </label>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   className="w-full bg-slate-50 hover:bg-slate-100/50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-slate-700"
                   value={formData.pesticide}
-                  onChange={(e) => setFormData({...formData, pesticide: Number(e.target.value)})}
+                  onChange={(e) => setFormData({ ...formData, pesticide: Number(e.target.value) })}
                 />
               </div>
             </div>
 
-            <button 
+            <button
               type="submit"
               disabled={loading}
               className="group w-full bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-bold text-base py-4 px-6 rounded-2xl hover:from-emerald-500 hover:to-teal-400 hover:shadow-lg hover:shadow-emerald-500/30 hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-70 disabled:hover:translate-y-0 disabled:hover:shadow-none flex items-center justify-center gap-2 relative overflow-hidden"
@@ -219,7 +220,7 @@ function App() {
                 </div>
               ) : (
                 <>
-                  <Sparkles className="w-5 h-5 text-emerald-100 group-hover:scale-110 transition-transform duration-300" /> 
+                  <Sparkles className="w-5 h-5 text-emerald-100 group-hover:scale-110 transition-transform duration-300" />
                   เริ่มวิเคราะห์ผลผลิต
                 </>
               )}
@@ -231,7 +232,7 @@ function App() {
             {/* พื้นหลังตกแต่ง Card ฝั่งขวา */}
             <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-500/20 blur-3xl rounded-full"></div>
             <div className="absolute bottom-0 left-0 w-40 h-40 bg-teal-500/20 blur-3xl rounded-full"></div>
-            
+
             <div className="bg-slate-900 rounded-[22px] p-6 sm:p-8 min-h-[380px] h-full flex flex-col relative z-10 border border-slate-800">
               <div className="flex items-center gap-2 pb-4 border-b border-slate-800 mb-6">
                 <div className="bg-emerald-500/20 p-2 rounded-lg">
@@ -250,12 +251,23 @@ function App() {
                 <div className="space-y-6 flex-grow flex flex-col justify-center animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="space-y-1">
                     <p className="text-xs text-slate-400 font-medium tracking-wider uppercase mb-2">ปริมาณคาดการณ์ผลผลิต</p>
+
+                    {/* ค่าหลัก (hg/ha) */}
                     <span className="text-4xl sm:text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300 block pb-1">
                       {prediction.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                     <span className="text-sm font-medium text-emerald-500/70 block">เฮกโตกรัมต่อเฮกตาร์ (hg/ha)</span>
+
+                    {/* 🌟 ส่วนที่เพิ่มขึ้นมา: แปลงหน่วยเป็น กิโลกรัมต่อไร่ */}
+                    <div className="mt-4 pt-4 border-t border-slate-700/50">
+                      <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">เทียบเท่าประมาณ</p>
+                      <span className="text-2xl font-bold text-white">
+                        {((prediction * 0.1) / 6.25).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                      <span className="text-sm text-slate-400 ml-2">กิโลกรัมต่อไร่</span>
+                    </div>
                   </div>
-                  
+
                   <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700/50 space-y-2 text-sm text-slate-300">
                     <div className="flex justify-between items-center">
                       <span className="text-slate-500">พืชเศรษฐกิจ</span>
