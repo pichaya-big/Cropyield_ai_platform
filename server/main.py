@@ -50,7 +50,7 @@ class PredictionRequest(BaseModel):
     pesticide: float
 
 
-@app.get("/api/")
+@app.get("/")
 def read_root():
     return {
         "message": "Welcome to CropYield-AI-Platform API",
@@ -64,44 +64,45 @@ def predict_yield(payload: PredictionRequest):
         raise HTTPException(status_code=500, detail="เซิร์ฟเวอร์ยังไม่พร้อมใช้งานเนื่องจากโหลดไฟล์โมเดลไม่สำเร็จ")
     
     try:
-        # 1. สร้าง DataFrame เปล่าที่มีคอลัมน์และลำดับเหมือนตอนเทรนโมเดลเป๊ะๆ (ค่าเริ่มต้นเป็น 0)
+        # 1. สร้าง DataFrame เปล่าที่มีคอลัมน์และลำดับเหมือนตอนเทรนโมเดลเป๊ะๆ (เริ่มต้นเป็น 0)
         input_df = pd.DataFrame(0.0, index=[0], columns=model_features)
         
-        # ปรับชื่อคอลัมน์ใน DataFrame ให้เป็นตัวพิมพ์เล็กชั่วคราวเพื่อใช้ค้นหาตำแหน่งในการเติมค่า
-        cols_lower = [str(c).lower() for c in input_df.columns]
-        
-        # 2. 🛡️ ตรวจสอบและเติมค่าประเภทตัวเลข (Numerical Features) แบบยืดหยุ่นไม่สนใจตัวพิมพ์เล็ก-ใหญ่
-        # ปีเพาะปลูก (Year)
-        if 'year' in cols_lower:
-            idx = cols_lower.index('year')
-            input_df.iloc[0, idx] = int(payload.year)
-            
-        # ปริมาณน้ำฝนเฉลี่ย (average_rain_fall_mm_per_year)
-        if 'average_rain_fall_mm_per_year' in cols_lower:
-            idx = cols_lower.index('average_rain_fall_mm_per_year')
-            input_df.iloc[0, idx] = float(payload.rain)
-            
-        # ปริมาณยาฆ่าแมลง (pesticides_tonnes)
-        if 'pesticides_tonnes' in cols_lower:
-            idx = cols_lower.index('pesticides_tonnes')
-            input_df.iloc[0, idx] = float(payload.pesticide)
-            
-        # อุณหภูมิเฉลี่ย (avg_temp)
-        if 'avg_temp' in cols_lower:
-            idx = cols_lower.index('avg_temp')
-            input_df.iloc[0, idx] = float(payload.temp)
-
-
-        # 3. 🗺️ จัดการ One-Hot Encoding แบบยืดหยุ่นรองรับทุกรูปแบบ (ตัวเล็ก/ตัวใหญ่/ขีดล่าง)
-        # ค้นหาและเปิดสวิตช์ (เปลี่ยนเป็น 1) ในคอลัมน์ที่ชื่อตรงกัน
+        # 2. เติมค่าประเภทตัวเลข (Numerical Features) โดยจับคู่ชื่อคอลัมน์แบบ Case-Insensitive
         for col in input_df.columns:
             col_lower = str(col).lower()
+            
             if col_lower == 'year':
+                input_df[col] = int(payload.year)
+            elif col_lower == 'average_rain_fall_mm_per_year':
+                input_df[col] = float(payload.rain)
+            elif col_lower == 'pesticides_tonnes':
+                input_df[col] = float(payload.pesticide)
+            elif col_lower == 'avg_temp':
+                # 🛡️ ป้องกันอุณหภูมิเวอร์เกินจริง (Data Validation)
+                if payload.temp > 60:
+                    input_df[col] = 35.0  # ดักไว้ไม่ให้โมเดลหลุดเพดานบินแช่แข็ง
+                else:
+                    input_df[col] = float(payload.temp)
+
+        # 3. 🔥 แก้บั๊ก One-Hot Encoding (เปิดสวิตช์คอลัมน์ประเทศและพืชให้เป็น 1)
+        # สร้างแพทเทิร์นชื่อคอลัมน์ที่คาดหวัง เช่น "area_thailand" หรือ "item_potatoes"
+        target_country_col = f"area_{payload.country.strip()}".lower()
+        target_item_col = f"item_{payload.item.strip()}".lower()
+        
+        for col in input_df.columns:
+            col_lower = str(col).lower().replace(" ", "_") # ล้างฟอร์แมตช่องว่าง
+            
+            if col_lower == target_country_col or col_lower == target_item_col:
+                input_df[col] = 1.0  # เปิดสวิตช์เป็น 1 ให้โมเดลรับรู้พืชและประเทศ!
+
+        # 4. ตรวจสอบและแปลง Data Type ให้ตรงกับโมเดล
+        for col in input_df.columns:
+            if str(col).lower() == 'year':
                 input_df[col] = input_df[col].astype('int64')
             else:
                 input_df[col] = input_df[col].astype('float64')
                 
-        # 4. 🚀 ส่งข้อมูลเข้าสมองกลโมเดลเพื่อพยากรณ์ผลลัพธ์
+        # 5. 🚀 ส่งข้อมูลทำนายผล
         prediction_result = model.predict(input_df)[0]
         
         return {
@@ -110,14 +111,15 @@ def predict_yield(payload: PredictionRequest):
                 "input_summary": {
                     "country": payload.country,
                     "item": payload.item,
-                    "year": payload.year
+                    "year": payload.year,
+                    "rain": payload.rain,
+                    "temp": payload.temp
                 },
                 "prediction_hg_ha": float(prediction_result)
             }
         }
         
-    except Exception as error:
-        # แสดงข้อผิดพลาดที่เกิดขึ้นจริงออกทางคอนโซลหลังบ้านเพื่อใช้ดีบั๊กงาน
+    except Exception error:
         import traceback
         print("❌ [DEBUG ERROR]:", traceback.format_exc())
         raise HTTPException(
