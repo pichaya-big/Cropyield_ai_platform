@@ -119,7 +119,7 @@ def predict_yield(payload: PredictionRequest):
             }
         }
         
-    except Exception error:
+    except Exception as error:
         import traceback
         print("❌ [DEBUG ERROR]:", traceback.format_exc())
         raise HTTPException(
