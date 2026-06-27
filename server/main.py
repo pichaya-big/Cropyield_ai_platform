@@ -7,40 +7,36 @@ import os
 
 app = FastAPI(
     title="CropYield-AI-Platform API",
-    description="Backend Server สำหรับระบบพยากรณ์ผลผลิตทางการเกษตร (FastAPI + uv)",
-    version="1.0.0"
+    description="Backend Server สำหรับระบบพยากรณ์ผลผลิต (สลับใช้ Pipeline ของเพื่อน)",
+    version="1.1.0"
 )
 
 # 🌐 ตั้งค่า CORS (Cross-Origin Resource Sharing)
-# เพื่ออนุญาตให้ฝั่ง client (Vite) ที่รันคนละพอร์ตสามารถส่งข้อมูลมาหาหลังบ้านได้
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # ใน Production จริงสามารถเจาะจงเฉพาะเช่น ["http://localhost:5173"]
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# 📁 กำหนด Path ของไฟล์โมเดลที่สอดคล้องกับที่คุณเซฟมาจาก Google Colab
+# 📁 กำหนด Path ชี้ไปที่ไฟล์โมเดล Pipeline ของเพื่อนชิ้นเดียวโดดๆ
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(CURRENT_DIR, 'crop_yield_stacking_model.pkl') # อัปเดตชื่อไฟล์ตรงนี้ครับ
-FEATURES_PATH = os.path.join(CURRENT_DIR, 'features_list.pkl')         # อัปเดตชื่อไฟล์ตรงนี้ครับ
+MODEL_PATH = os.path.join(CURRENT_DIR, 'crop_yield_model.pkl') 
 
-# 🤖 โหลดโมเดลและฟีเจอร์เตรียมไว้ตั้งแต่ตอน Start Server
+# 🤖 โหลดโมเดล Pipeline ขึ้นมารอไว้
 try:
-    if not os.path.exists(MODEL_PATH) or not os.path.exists(FEATURES_PATH):
-        raise FileNotFoundError("ไม่พบไฟล์ .pkl ในโฟลเดอร์ server กรุณาตรวจสอบว่าย้ายไฟล์มาถูกที่และชื่อตรงกัน")
+    if not os.path.exists(MODEL_PATH):
+        raise FileNotFoundError("ไม่พบไฟล์ friend_model.pkl ในโฟลเดอร์เซิร์ฟเวอร์ กรุณาตรวจสอบการวางไฟล์")
         
     model = joblib.load(MODEL_PATH)
-    model_features = joblib.load(FEATURES_PATH)
-    print("🎯 [SUCCESS] โหลดไฟล์ Stacking Model และ Features List เข้าสู่ระบบเรียบร้อยแล้ว!")
+    print("🎯 [SUCCESS] โหลดโมเดล Pipeline ของเพื่อนสำเร็จ! พร้อมแปลงข้อมูลอัตโนมัติ")
 except Exception as e:
-    print(f"❌ [ERROR] เกิดข้อผิดพลาดในการโหลดโมเดล: {e}")
+    print(f"❌ [ERROR] โหลดโมเดลไม่สำเร็จ: {e}")
     model = None
-    model_features = None
 
 
-# 📝 กำหนด Schema ของข้อมูลที่รับมาจากหน้าบ้าน (Vite) ด้วย Pydantic
+# 📝 Schema รับข้อมูลจากหน้าบ้าน (เหมือนเดิมทุกประการ ไม่ต้องแก้ UI)
 class PredictionRequest(BaseModel):
     country: str
     item: str
@@ -60,49 +56,22 @@ def read_root():
 
 @app.post("/api/predict")
 def predict_yield(payload: PredictionRequest):
-    if model is None or model_features is None:
+    if model is None:
         raise HTTPException(status_code=500, detail="เซิร์ฟเวอร์ยังไม่พร้อมใช้งานเนื่องจากโหลดไฟล์โมเดลไม่สำเร็จ")
     
     try:
-        # 1. สร้าง DataFrame เปล่าที่มีคอลัมน์และลำดับเหมือนตอนเทรนโมเดลเป๊ะๆ (เริ่มต้นเป็น 0)
-        input_df = pd.DataFrame(0.0, index=[0], columns=model_features)
+        # ✨ จุดเปลี่ยนชีวิต: สร้าง DataFrame ดิบๆ ส่งให้ Pipeline ของเพื่อนไป One-Hot ทำเองข้างใน
+        # ⚠️ ข้อสำคัญ: ชื่อคอลัมน์ฝั่งซ้าย ต้องสะกดตรงกับชื่อคอลัมน์ดั้งเดิมในไฟล์ CSV ที่เพื่อนใช้เทรนเป๊ะๆ 
+        input_df = pd.DataFrame([{
+            'Area': payload.country.strip(),
+            'Item': payload.item.strip(),
+            'Year': int(payload.year),
+            'average_rain_fall_mm_per_year': float(payload.rain),
+            'pesticides_tonnes': float(payload.pesticide),
+            'avg_temp': float(payload.temp)
+        }])
         
-        # 2. เติมค่าประเภทตัวเลข (Numerical Features) โดยจับคู่ชื่อคอลัมน์แบบ Case-Insensitive
-        for col in input_df.columns:
-            col_lower = str(col).lower()
-            
-            if col_lower == 'year':
-                input_df[col] = int(payload.year)
-            elif col_lower == 'average_rain_fall_mm_per_year':
-                input_df[col] = float(payload.rain)
-            elif col_lower == 'pesticides_tonnes':
-                input_df[col] = float(payload.pesticide)
-            elif col_lower == 'avg_temp':
-                # 🛡️ ป้องกันอุณหภูมิเวอร์เกินจริง (Data Validation)
-                if payload.temp > 60:
-                    input_df[col] = 35.0  # ดักไว้ไม่ให้โมเดลหลุดเพดานบินแช่แข็ง
-                else:
-                    input_df[col] = float(payload.temp)
-
-        # 3. 🔥 แก้บั๊ก One-Hot Encoding (เปิดสวิตช์คอลัมน์ประเทศและพืชให้เป็น 1)
-        # สร้างแพทเทิร์นชื่อคอลัมน์ที่คาดหวัง เช่น "area_thailand" หรือ "item_potatoes"
-        target_country_col = f"area_{payload.country.strip()}".lower()
-        target_item_col = f"item_{payload.item.strip()}".lower()
-        
-        for col in input_df.columns:
-            col_lower = str(col).lower().replace(" ", "_") # ล้างฟอร์แมตช่องว่าง
-            
-            if col_lower == target_country_col or col_lower == target_item_col:
-                input_df[col] = 1.0  # เปิดสวิตช์เป็น 1 ให้โมเดลรับรู้พืชและประเทศ!
-
-        # 4. ตรวจสอบและแปลง Data Type ให้ตรงกับโมเดล
-        for col in input_df.columns:
-            if str(col).lower() == 'year':
-                input_df[col] = input_df[col].astype('int64')
-            else:
-                input_df[col] = input_df[col].astype('float64')
-                
-        # 5. 🚀 ส่งข้อมูลทำนายผล
+        # 🚀 ยิงข้อมูลเข้าโมเดลของเพื่อนตรงๆ ไม่ต้องวนลูปสับคอลัมน์เองให้เมื่อยแล้วครับ
         prediction_result = model.predict(input_df)[0]
         
         return {
@@ -115,7 +84,7 @@ def predict_yield(payload: PredictionRequest):
                     "rain": payload.rain,
                     "temp": payload.temp
                 },
-                "prediction_hg_ha": float(prediction_result)
+                "prediction_hg_ha": float(prediction_result) # พ่นค่าหลักแสนดิบๆ ส่งให้สูตรหน้าบ้านหารต่อ
             }
         }
         
@@ -124,5 +93,5 @@ def predict_yield(payload: PredictionRequest):
         print("❌ [DEBUG ERROR]:", traceback.format_exc())
         raise HTTPException(
             status_code=400, 
-            detail=f"เกิดข้อผิดพลาดภายในระบบประมวลผลโมเดล: {str(error)}"
+            detail=f"เกิดข้อผิดพลาดในการทำนายผลผ่าน Pipeline: {str(error)}"
         )
