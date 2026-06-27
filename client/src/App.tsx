@@ -265,7 +265,7 @@ function App() {
                     <div className="mt-4 pt-4 border-t border-slate-700/50">
                       <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">เทียบเท่าประมาณ</p>
                       <span className="text-2xl font-bold text-white">
-                        {((prediction * 0.1) / 6.25).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {(prediction / 62.5).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                       <span className="text-sm text-slate-400 ml-2">กิโลกรัมต่อไร่</span>
                     </div>
